@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.env
+.env.local
+
+# Bot State & Sensitive files
+*.json
+!package.json
+id.json
+secret*
+*.log
