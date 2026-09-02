@@ -1,0 +1,469 @@
+import time
+import json
+import os
+import urllib.request
+import xml.etree.ElementTree as ET
+import base58
+import base64
+from solders.keypair import Keypair
+from solders.transaction import VersionedTransaction
+
+DATA_FILE = "./crypto_trading_bot.json"
+SOLANA_KEYPAIR_PATH = "./id.json.example"
+SOL_MINT = "So11111111111111111111111111111111111111112"
+USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+RPC_URL = "https://api.mainnet-beta.solana.com"
+
+# Dynamic profit target baseline (adaptive 0.4% - 2.5%)
+MIN_PROFIT_TAKE_PCT = 0.45
+HARD_STOP_LOSS_PCT = -1.8
+
+def get_wallet_address():
+    if os.path.exists(SOLANA_KEYPAIR_PATH):
+        try:
+            with open(SOLANA_KEYPAIR_PATH, "r") as f:
+                keypair = json.load(f)
+            return base58.b58encode(bytes(keypair[32:])).decode("utf-8")
+        except Exception:
+            pass
+    return "YOUR_SOLANA_PUBLIC_KEY"
+
+def get_onchain_balances(pubkey):
+    sol_bal = 0.0
+    usdc_bal = 0.0
+    try:
+        payload_sol = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "getBalance", "params": [pubkey]}).encode()
+        req = urllib.request.Request(RPC_URL, data=payload_sol, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+            sol_bal = data.get("result", {}).get("value", 0) / 1e9
+    except Exception as e:
+        print(f"Error fetching SOL balance: {e}")
+
+    try:
+        payload_token = json.dumps({
+            "jsonrpc": "2.0", "id": 2, "method": "getTokenAccountsByOwner",
+            "params": [pubkey, {"mint": USDC_MINT}, {"encoding": "jsonParsed"}]
+        }).encode()
+        req_t = urllib.request.Request(RPC_URL, data=payload_token, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req_t, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+            accounts = data.get("result", {}).get("value", [])
+            for acc in accounts:
+                info = acc.get("account", {}).get("data", {}).get("parsed", {}).get("info", {}).get("tokenAmount", {})
+                usdc_bal += float(info.get("uiAmount", 0.0) or 0.0)
+    except Exception as e:
+        print(f"Error fetching USDC balance: {e}")
+
+    return sol_bal, usdc_bal
+
+def send_raw_tx_rpc(signed_tx_base64):
+    payload = json.dumps({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "sendTransaction",
+        "params": [
+            signed_tx_base64,
+            {
+                "skipPreflight": False,
+                "preflightCommitment": "confirmed",
+                "encoding": "base64",
+                "maxRetries": 3
+            }
+        ]
+    }).encode()
+    req = urllib.request.Request(RPC_URL, data=payload, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return json.loads(r.read().decode())
+
+def execute_swap(input_mint, output_mint, amount_raw, slippage_bps=150):
+    """Executes on-chain swap via Raydium Trade Router"""
+    try:
+        if not os.path.exists(SOLANA_KEYPAIR_PATH):
+            return False, "Keypair not found"
+        with open(SOLANA_KEYPAIR_PATH) as f:
+            secret = json.load(f)
+        keypair = Keypair.from_bytes(bytes(secret))
+        wallet_pubkey = str(keypair.pubkey())
+        
+        quote_url = f"https://transaction-v1.raydium.io/compute/swap-base-in?inputMint={input_mint}&outputMint={output_mint}&amount={int(amount_raw)}&slippageBps={slippage_bps}&txVersion=V0"
+        req = urllib.request.Request(quote_url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            quote_res = json.loads(r.read().decode())
+            
+        if not quote_res.get("success"):
+            return False, f"Quote failed: {quote_res.get('msg')}"
+            
+        tx_url = "https://transaction-v1.raydium.io/transaction/swap-base-in"
+        payload = json.dumps({
+            "computeUnitPriceMicroLamports": "50000",
+            "swapResponse": quote_res,
+            "txVersion": "V0",
+            "wallet": wallet_pubkey,
+            "wrapSol": (input_mint == SOL_MINT),
+            "unwrapSol": (output_mint == SOL_MINT)
+        }).encode()
+        
+        req_tx = urllib.request.Request(tx_url, data=payload, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req_tx, timeout=15) as r:
+            tx_res = json.loads(r.read().decode())
+            
+        if not tx_res.get("success"):
+            return False, f"Build tx failed: {tx_res.get('msg')}"
+            
+        transactions = tx_res.get("data", [])
+        signatures = []
+        for tx_item in transactions:
+            raw_tx_bytes = base64.b64decode(tx_item["transaction"])
+            tx = VersionedTransaction.from_bytes(raw_tx_bytes)
+            signed_tx = VersionedTransaction(tx.message, [keypair])
+            signed_tx_b64 = base64.b64encode(bytes(signed_tx)).decode("utf-8")
+            
+            rpc_res = send_raw_tx_rpc(signed_tx_b64)
+            if "error" in rpc_res:
+                return False, f"RPC Error: {json.dumps(rpc_res['error'])}"
+            signatures.append(rpc_res.get("result"))
+            
+        return True, ", ".join(signatures)
+    except Exception as e:
+        return False, str(e)
+
+def get_live_sol_prices():
+    sol_usd = 104.50
+    sol_idr = 1850000.0
+    usd_idr = 17700.0
+    try:
+        url = "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd,idr"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode())
+            sol_usd = float(data["solana"]["usd"])
+            sol_idr = float(data["solana"]["idr"])
+            usd_idr = sol_idr / sol_usd if sol_usd > 0 else 17700.0
+            return sol_usd, sol_idr, usd_idr
+    except Exception:
+        try:
+            url_binance = "https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT"
+            req = urllib.request.Request(url_binance, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode())
+                sol_usd = float(data["price"])
+                sol_idr = sol_usd * 17700.0
+                return sol_usd, sol_idr, 17700.0
+        except Exception:
+            return sol_usd, sol_idr, usd_idr
+
+def get_crypto_news_sentiment():
+    feeds = [
+        "https://cointelegraph.com/rss/tag/solana",
+        "https://coindesk.com/arc/outboundfeeds/rss/"
+    ]
+    positive_keywords = ["surge", "rally", "burn", "partnership", "all-time high", "ath", "adoption", "launch", "upgrade", "bullish", "inflow", "breakout", "accumulate", "etf", "gain"]
+    negative_keywords = ["hack", "exploit", "crash", "outage", "lawsuit", "sec", "ban", "dump", "bearish", "scam", "down", "investigation", "fud"]
+    
+    score = 0
+    headlines = []
+    
+    for feed in feeds:
+        try:
+            req = urllib.request.Request(feed, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                root = ET.fromstring(resp.read())
+                items = root.findall(".//item")[:4]
+                for it in items:
+                    title = it.find("title").text or ""
+                    headlines.append(title)
+                    lower_t = title.lower()
+                    for w in positive_keywords:
+                        if w in lower_t:
+                            score += 1
+                    for w in negative_keywords:
+                        if w in lower_t:
+                            score -= 1
+        except Exception:
+            continue
+            
+    sentiment = "NEUTRAL"
+    if score >= 3:
+        sentiment = "STRONG_BULLISH"
+    elif score >= 1:
+        sentiment = "BULLISH"
+    elif score <= -3:
+        sentiment = "STRONG_BEARISH"
+    elif score <= -1:
+        sentiment = "BEARISH"
+        
+    return {
+        "sentiment": sentiment,
+        "score": score,
+        "sample_headlines": headlines[:3]
+    }
+
+def analyze_market_prediction(check_logs, current_price, sentiment_info):
+    """Predicts optimal dynamic trade action based on momentum, support/resistance, & sentiment"""
+    if len(check_logs) < 3:
+        return "SIDEWAYS", "NEUTRAL", 0.6, "Mengumpulkan data awal..."
+
+    recent_prices = [log.get("sol_idr", current_price) for log in check_logs[-12:]]
+    p_now = current_price
+    p_prev = recent_prices[-1]
+    p_min = min(recent_prices)
+    p_max = max(recent_prices)
+    
+    delta_short = ((p_now - p_prev) / p_prev) * 100 if p_prev > 0 else 0
+    delta_range = ((p_max - p_min) / p_min) * 100 if p_min > 0 else 0
+    dist_from_low = ((p_now - p_min) / p_min) * 100 if p_min > 0 else 0
+    dist_from_high = ((p_max - p_now) / p_max) * 100 if p_max > 0 else 0
+    
+    score = sentiment_info.get("score", 0)
+
+    # Dynamic target depending on range
+    dynamic_target_pct = max(MIN_PROFIT_TAKE_PCT, round(delta_range * 0.45, 2))
+    
+    prediction = "HOLD"
+    pattern = "SIDEWAYS"
+    analysis = f"Rentang 3-jam: {delta_range:.2f}%. Target adaptif: +{dynamic_target_pct}%. "
+    
+    # 1. Deteksi Rebound / Buy Dip Signal
+    if (dist_from_low <= 0.25 and delta_range >= 0.6) or (delta_short > 0.3 and dist_from_low <= 0.5):
+        pattern = "DIP_SUPPORT"
+        prediction = "PREDICT_BUY_REBOUND"
+        analysis += f"Harga di area lantai support (Rp {p_min:,.0f}). Indikasi kuat pantulan ke atas."
+    # 2. Deteksi Resistance / Peak Profit Taking Signal
+    elif dist_from_high <= 0.2 and delta_range >= 0.6:
+        pattern = "RESISTANCE_PEAK"
+        prediction = "PREDICT_SELL_RESISTANCE"
+        analysis += f"Harga menyentuh area plafon resistance (Rp {p_max:,.0f}). Potensi koreksi/reversal."
+    # 3. Momentum Kuat
+    elif delta_short > 0.4 or (score >= 2 and delta_short > 0.15):
+        pattern = "MOMENTUM_UP"
+        prediction = "PREDICT_RIDE_TREND"
+        analysis += f"Momentum beli agresif (+{delta_short:.2f}%). Peluang lanjutan kenaikan harga."
+    elif delta_short < -0.4:
+        pattern = "MOMENTUM_DOWN"
+        prediction = "PREDICT_WAIT_DIP"
+        analysis += f"Tekanan jual aktif ({delta_short:.2f}%). Menunggu titik henti support."
+    else:
+        pattern = "SIDEWAYS"
+        prediction = "PREDICT_RANGE_TRADE"
+        analysis += f"Konsolidasi di range Rp {p_min:,.0f} - Rp {p_max:,.0f}."
+        
+    return pattern, prediction, dynamic_target_pct, analysis
+
+def load_portfolio():
+    pubkey = get_wallet_address()
+    sol_bal, usdc_bal = get_onchain_balances(pubkey)
+    
+    data = {
+        "wallet_address": pubkey,
+        "is_real_wallet": True,
+        "sol_balance": sol_bal,
+        "usdc_balance": usdc_bal,
+        "strategy": "AI_PREDICTIVE_PROFIT_MAXIMIZER (Dynamic Take-Profit)",
+        "buckets": {
+            "scalper_50": {
+                "name": "Predictive Profit Machine (Any Gain > 0.45%)",
+                "allocation_pct": 50,
+                "sol_allocated": sol_bal * 0.5,
+                "usdc_allocated": usdc_bal * 0.5,
+                "entry_price": 0.0,
+                "state": "IN_TRADE",
+                "target_pnl_pct": MIN_PROFIT_TAKE_PCT,
+                "today_completed_trades": 0,
+                "today_realized_pnl_idr": 0
+            },
+            "swing_50": {
+                "name": "Trend Swing Runner (Trailing Target +5-50%)",
+                "allocation_pct": 50,
+                "sol_allocated": sol_bal * 0.5,
+                "usdc_allocated": usdc_bal * 0.5,
+                "entry_price": 0.0,
+                "peak_price": 0.0,
+                "state": "HOLDING_TREND"
+            }
+        },
+        "trades": [],
+        "check_logs": []
+    }
+    
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, "r") as f:
+                saved = json.load(f)
+                data["trades"] = saved.get("trades", [])
+                data["check_logs"] = saved.get("check_logs", [])
+                data["last_action"] = saved.get("last_action", "HOLD")
+                if "buckets" in saved:
+                    b_scalp = saved["buckets"].get("scalper_50", {})
+                    data["buckets"]["scalper_50"]["entry_price"] = b_scalp.get("entry_price", 0.0)
+                    data["buckets"]["scalper_50"]["today_completed_trades"] = b_scalp.get("today_completed_trades", 0)
+                    data["buckets"]["scalper_50"]["today_realized_pnl_idr"] = b_scalp.get("today_realized_pnl_idr", 0)
+                    
+                    b_swing = saved["buckets"].get("swing_50", {})
+                    data["buckets"]["swing_50"]["entry_price"] = b_swing.get("entry_price", 0.0)
+                    data["buckets"]["swing_50"]["peak_price"] = b_swing.get("peak_price", 0.0)
+        except Exception:
+            pass
+            
+    return data
+
+def save_portfolio(p):
+    with open(DATA_FILE, "w") as f:
+        json.dump(p, f, indent=2)
+
+def evaluate_and_trade():
+    p = load_portfolio()
+    pubkey = p["wallet_address"]
+    sol_bal = p["sol_balance"]
+    usdc_bal = p["usdc_balance"]
+    
+    sol_usd, sol_idr, usd_idr = get_live_sol_prices()
+    news = get_crypto_news_sentiment()
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S WIB", time.localtime(time.time() + 7*3600))
+    
+    total_val_usd = (sol_bal * sol_usd) + usdc_bal
+    total_val_idr = total_val_usd * usd_idr
+
+    # AI Pattern & Prediction
+    pattern, prediction, dynamic_target_pct, analysis_text = analyze_market_prediction(p.get("check_logs", []), sol_idr, news)
+
+    scalp = p["buckets"]["scalper_50"]
+    swing = p["buckets"]["swing_50"]
+    scalp["sol_allocated"] = sol_bal * 0.5
+    scalp["usdc_allocated"] = usdc_bal * 0.5
+    swing["sol_allocated"] = sol_bal * 0.5
+    swing["usdc_allocated"] = usdc_bal * 0.5
+
+    # 1. EVALUASI PREDICTIVE PROFIT SCALPER (YANG PENTING PROFIT)
+    scalp_action = "SCALP_MONITOR"
+    scalp_entry = scalp.get("entry_price", 0.0)
+    
+    # Inisialisasi entry jika kosong
+    if scalp_entry == 0.0:
+        scalp["entry_price"] = sol_idr
+        scalp_entry = sol_idr
+
+    pnl_scalp = ((sol_idr - scalp_entry) / scalp_entry) * 100
+
+    # EKSEKUSI JUAL: Jika untung >= dynamic target ATAU untung >= 0.45% dan sudah di resistance/peak
+    if pnl_scalp >= dynamic_target_pct or (pnl_scalp >= MIN_PROFIT_TAKE_PCT and prediction in ("PREDICT_SELL_RESISTANCE", "PREDICT_WAIT_DIP")):
+        if sol_bal >= 0.009:
+            # Eksekusi swap sebagian SOL ke USDC untuk kunci cuan
+            swap_amount_sol = 0.0045 # Setengah dari porsi scalper
+            success, tx_sig = execute_swap(SOL_MINT, USDC_MINT, int(swap_amount_sol * 1e9))
+            if success:
+                scalp_action = "ONCHAIN_SELL_PROFIT_LOCKED"
+                scalp_reason = f"Cuan terkunci on-chain (+{pnl_scalp:.2f}%)! Tx: {tx_sig[:12]}..."
+                p["trades"].append({
+                    "time": timestamp,
+                    "type": "SELL_PROFIT_LOCKED",
+                    "price_idr": sol_idr,
+                    "amount_sol_sold": swap_amount_sol,
+                    "profit_pct": pnl_scalp,
+                    "tx_hash": tx_sig
+                })
+            else:
+                scalp_action = "PROFIT_TARGET_HIT (SWAP_RETRY)"
+                scalp_reason = f"Sinyal Take Profit (+{pnl_scalp:.2f}%) tercapai! Swap note: {tx_sig}"
+        else:
+            scalp_action = "PROFIT_LOCKED_IDLE"
+            scalp_reason = f"Target untung tercapai (+{pnl_scalp:.2f}%). Saldo SOL minim ({sol_bal:.6f} SOL)."
+            
+        scalp["today_completed_trades"] += 1
+        scalp["entry_price"] = sol_idr # Reset entry to current price for next cycle
+        scalp["state"] = "PROFIT_LOCKED"
+        
+    # EKSEKUSI BELI: Jika kas USDC cukup dan harga berada di area DIP/Support
+    elif usdc_bal >= 0.5 and prediction == "PREDICT_BUY_REBOUND":
+        swap_amount_usdc = usdc_bal * 0.7 # Pakai 70% kas untuk beli dip
+        success, tx_sig = execute_swap(USDC_MINT, SOL_MINT, int(swap_amount_usdc * 1e6))
+        if success:
+            scalp_action = "ONCHAIN_BUY_DIP_EXECUTED"
+            scalp_reason = f"Beli on-chain di dasar dip (Rp {sol_idr:,.0f})! Tx: {tx_sig[:12]}..."
+            p["trades"].append({
+                "time": timestamp,
+                "type": "BUY_DIP",
+                "price_idr": sol_idr,
+                "usdc_spent": swap_amount_usdc,
+                "tx_hash": tx_sig
+            })
+            scalp["entry_price"] = sol_idr
+        else:
+            scalp_action = "BUY_SIGNAL_DIP"
+            scalp_reason = f"Terdeteksi area diskon/dip. Swap note: {tx_sig}"
+    elif pnl_scalp <= HARD_STOP_LOSS_PCT:
+        scalp_action = "SCALP_STOP_LOSS"
+        scalp_reason = f"Cut loss proteksi modal di {pnl_scalp:.2f}%. [Pola: {pattern}]"
+        scalp["entry_price"] = sol_idr
+    else:
+        scalp_action = "SCALP_MONITOR"
+        scalp_reason = f"Posisi berjalan: PnL {pnl_scalp:+.2f}% (Target dinamis: +{dynamic_target_pct}%). {analysis_text}"
+
+    # 2. EVALUASI BUCKET B (SWING TREND RUNNER)
+    swing_action = "SWING_HOLD"
+    if swing.get("entry_price", 0.0) == 0.0:
+        swing["entry_price"] = sol_idr
+        swing["peak_price"] = sol_idr
+    else:
+        if sol_idr > swing.get("peak_price", 0.0):
+            swing["peak_price"] = sol_idr
+    
+    swing_change = ((sol_idr - swing["entry_price"]) / swing["entry_price"]) * 100
+    swing_reason = f"Swing trend: {swing_change:+.2f}% vs entry. Prediksi: {prediction} ({pattern})."
+
+    overall_action = f"{scalp_action} | {swing_action}"
+    overall_reason = f"[Scalper]: {scalp_reason} [Swing]: {swing_reason}"
+
+    # Re-fetch latest balances after potential swap
+    final_sol, final_usdc = get_onchain_balances(pubkey)
+    p["sol_balance"] = final_sol
+    p["usdc_balance"] = final_usdc
+    p["total_val_usd"] = (final_sol * sol_usd) + final_usdc
+    p["total_val_idr"] = p["total_val_usd"] * usd_idr
+
+    p["last_action"] = overall_action
+    p["sol_usd_price"] = sol_usd
+    p["sol_idr_price"] = sol_idr
+    p["usd_idr_rate"] = usd_idr
+    p["sentiment"] = news["sentiment"]
+    p["sentiment_score"] = news["score"]
+    p["market_pattern"] = pattern
+    p["market_prediction"] = prediction
+    
+    p["check_logs"] = p.get("check_logs", [])
+    p["check_logs"].append({
+        "timestamp": timestamp,
+        "action": scalp_action,
+        "sol_balance": final_sol,
+        "usdc_balance": final_usdc,
+        "sol_usd": sol_usd,
+        "sol_idr": sol_idr,
+        "total_val_usd": p["total_val_usd"],
+        "total_val_idr": p["total_val_idr"],
+        "sentiment": news["sentiment"],
+        "sentiment_score": news["score"],
+        "pattern": pattern,
+        "prediction": prediction,
+        "scalp_state": scalp.get("state", "-"),
+        "reason": overall_reason
+    })
+    p["check_logs"] = p["check_logs"][-50:]
+    
+    save_portfolio(p)
+    
+    report = (
+        f"*Laporan AI Predictive Profit Maximizer (15m Interval)*\n\n"
+        f"- *Waktu:* {timestamp}\n"
+        f"- *Harga Live SOL:* Rp {sol_idr:,.0f} (${sol_usd:.2f})\n"
+        f"- *Pola & Prediksi AI:* `{pattern}` ➔ `{prediction}`\n"
+        f"  └ {analysis_text}\n"
+        f"- *⚡ Bucket A (Adaptive Scalper):* {scalp_action}\n"
+        f"  └ {scalp_reason}\n"
+        f"- *🌊 Bucket B (Swing Runner):* {swing_action}\n"
+        f"  └ {swing_reason}\n"
+        f"- *Saldo Kas USDC:* ${final_usdc:.4f} | *Aset SOL:* {final_sol:.6f} SOL"
+    )
+    return report
+
+if __name__ == "__main__":
+    print(evaluate_and_trade())

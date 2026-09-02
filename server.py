@@ -164,7 +164,7 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
               raised: '#0f1626',
               overlay: '#17223b',
               border: '#1f2e4d',
-              muted: '#627d98'
+              muted: '#94a3b8'
             },
             sol: '#14F195',
             usdc: '#2775CA'
@@ -181,8 +181,13 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
     ::-webkit-scrollbar-thumb:hover { background: #2775CA; }
     .tabular-numbers { font-variant-numeric: tabular-nums; }
 
+    :focus-visible {
+      outline: 2px solid #14F195;
+      outline-offset: 2px;
+    }
+
     @keyframes dataPulse {
-      0% { background-color: rgba(20, 241, 149, 0.2); }
+      0% { background-color: rgba(20, 241, 149, 0.25); }
       100% { background-color: transparent; }
     }
     .flash-update {
@@ -194,96 +199,107 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
   </style>
 </head>
 <body class="bg-surface text-slate-100 min-h-full font-sans antialiased flex flex-col">
+  <!-- Connection Status Banner -->
+  <div id="conn-banner" class="hidden bg-rose-950/90 border-b border-rose-500/30 px-4 py-2 text-xs text-rose-200 flex items-center justify-between z-40">
+    <div class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-rose-400 animate-ping"></span>
+      <span id="conn-banner-msg">Gagal menghubungkan ke backend RPC. Mencoba sinkronisasi ulang...</span>
+    </div>
+    <button onclick="refreshData(true)" class="px-2 py-0.5 rounded bg-rose-900 border border-rose-700 text-white font-medium hover:bg-rose-800 transition" aria-label="Coba hubungkan kembali">
+      Coba Lagi
+    </button>
+  </div>
+
   <!-- Top Navigation Bar -->
-  <header class="border-b border-surface-border bg-surface-raised/80 backdrop-blur-md sticky top-0 z-30">
+  <header class="border-b border-surface-border bg-surface-raised/80 backdrop-blur-md sticky top-0 z-30" role="banner">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-surface-overlay border border-surface-border flex items-center justify-center text-emerald-400 font-bold font-mono text-sm">
+        <div class="w-8 h-8 rounded-lg bg-surface-overlay border border-surface-border flex items-center justify-center text-emerald-400 font-bold font-mono text-sm shadow-sm" aria-label="Alokasi 50/50 Dual Bucket">
           50/50
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <span class="text-sm font-semibold tracking-tight text-white">Dual-Bucket Sentinel Node</span>
-            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">50% SCALPER + 50% SWING</span>
+            <h1 class="text-sm font-semibold tracking-tight text-white">Dual-Bucket Sentinel Node</h1>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">50% SCALPER + 50% SWING</span>
           </div>
-          <p id="wallet-addr" class="text-[11px] font-mono text-slate-400 truncate max-w-xs sm:max-w-md">Connecting...</p>
+          <p id="wallet-addr" class="text-[11px] font-mono text-slate-300 truncate max-w-xs sm:max-w-md">Menghubungkan...</p>
         </div>
       </div>
-      
+
       <div class="flex items-center gap-4 text-right">
         <div class="hidden sm:block">
-          <div class="text-[10px] uppercase font-semibold tracking-wider text-slate-400">Cron 15m Cadence</div>
-          <div id="last-updated" class="text-xs font-mono text-slate-200 tabular-numbers">--:--:--</div>
+          <div class="text-[10px] uppercase font-semibold tracking-wider text-slate-400">Cadence Cron 15m</div>
+          <div id="last-updated" class="text-xs font-mono text-slate-200 tabular-numbers" aria-live="polite">--:--:--</div>
         </div>
-        <button onclick="refreshData(true)" class="p-2 text-slate-400 hover:text-white rounded-lg bg-surface-overlay border border-surface-border transition hover:border-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-400">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        <button id="btn-manual-refresh" onclick="refreshData(true)" class="p-2 text-slate-300 hover:text-white rounded-lg bg-surface-overlay border border-surface-border transition hover:border-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" aria-label="Segarkan Data Real-time (Shortcut: R)" title="Segarkan Data (Tekan 'R')">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
         </button>
       </div>
     </div>
   </header>
 
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8" role="main">
     <!-- Primary Financial Ledger Metric Strip -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" role="region" aria-label="Ringkasan Portofolio On-Chain">
       <!-- Total Value (IDR) -->
-      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 relative overflow-hidden flex flex-col justify-between">
+      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 relative overflow-hidden flex flex-col justify-between shadow-sm">
         <div class="flex justify-between items-start">
-          <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Total Saldo Dompet</span>
+          <span class="text-xs font-medium uppercase tracking-wider text-slate-300">Total Saldo Dompet</span>
           <span id="pnl-status" class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">ON-CHAIN</span>
         </div>
         <div class="my-3">
-          <div id="total-val-idr" class="text-3xl font-bold tracking-tight text-white font-sans tabular-numbers">Rp 0</div>
-          <div id="total-val-usd" class="text-xs font-mono text-slate-400 mt-1 tabular-numbers">≈ $0.00 USD</div>
+          <div id="total-val-idr" class="text-3xl font-bold tracking-tight text-white font-sans tabular-numbers" aria-live="polite">Rp 0</div>
+          <div id="total-val-usd" class="text-xs font-mono text-slate-300 mt-1 tabular-numbers">≈ $0.00 USD</div>
         </div>
-        <div class="text-[11px] text-slate-400 border-t border-surface-border/50 pt-2 flex justify-between">
+        <div class="text-[11px] text-slate-300 border-t border-surface-border/60 pt-2 flex justify-between">
           <span>Dompet Aktif</span>
-          <span class="text-slate-300">Solana Network</span>
+          <span class="text-slate-200">Solana Network</span>
         </div>
       </div>
 
       <!-- Real SOL Balance -->
-      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 flex flex-col justify-between">
+      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 flex flex-col justify-between shadow-sm">
         <div class="flex justify-between items-start">
-          <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Posisi Aset SOL</span>
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-xs font-medium uppercase tracking-wider text-slate-300">Posisi Aset SOL</span>
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true"></span>
         </div>
         <div class="my-3">
-          <div id="sol-bal" class="text-2xl font-bold text-slate-100 font-mono tabular-numbers">0.000000 SOL</div>
+          <div id="sol-bal" class="text-2xl font-bold text-slate-100 font-mono tabular-numbers" aria-live="polite">0.000000 SOL</div>
           <div id="sol-val-idr" class="text-xs font-sans text-emerald-400 mt-1 font-medium tabular-numbers">≈ Rp 0</div>
         </div>
-        <div class="text-[11px] text-slate-400 border-t border-surface-border/50 pt-2 flex justify-between font-mono">
+        <div class="text-[11px] text-slate-300 border-t border-surface-border/60 pt-2 flex justify-between font-mono">
           <span>SPOT</span>
-          <span id="sol-val-usd" class="text-slate-300">$0.00</span>
+          <span id="sol-val-usd" class="text-slate-200">$0.00</span>
         </div>
       </div>
 
       <!-- Real USDC Liquidity -->
-      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 flex flex-col justify-between">
+      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 flex flex-col justify-between shadow-sm">
         <div class="flex justify-between items-start">
-          <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Kas USDC (Ready)</span>
-          <span class="text-[10px] font-mono text-cyan-400">SPL</span>
+          <span class="text-xs font-medium uppercase tracking-wider text-slate-300">Kas USDC (Ready)</span>
+          <span class="text-[10px] font-mono text-cyan-400" title="Solana Program Library Token">SPL</span>
         </div>
         <div class="my-3">
-          <div id="usdc-val-idr" class="text-2xl font-bold text-slate-100 font-sans tabular-numbers">Rp 0</div>
+          <div id="usdc-val-idr" class="text-2xl font-bold text-slate-100 font-sans tabular-numbers" aria-live="polite">Rp 0</div>
           <div id="usdc-bal" class="text-xs font-mono text-cyan-400 mt-1 tabular-numbers">$0.0000 USDC</div>
         </div>
-        <div class="text-[11px] text-slate-400 border-t border-surface-border/50 pt-2 flex justify-between">
+        <div class="text-[11px] text-slate-300 border-t border-surface-border/60 pt-2 flex justify-between">
           <span>Cadangan Swap</span>
-          <span class="text-slate-300 font-mono">Stablecoin</span>
+          <span class="text-slate-200 font-mono">Stablecoin</span>
         </div>
       </div>
 
       <!-- Current Oracle & Pattern -->
-      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 flex flex-col justify-between">
+      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 flex flex-col justify-between shadow-sm">
         <div class="flex justify-between items-start">
-          <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Pola Pasar (15m)</span>
+          <span class="text-xs font-medium uppercase tracking-wider text-slate-300">Pola Pasar (15m)</span>
           <span id="pattern-badge" class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-surface-overlay text-amber-300 border border-surface-border">SCANNING</span>
         </div>
         <div class="my-3">
-          <div id="sol-price-idr" class="text-xl font-bold text-white font-mono tabular-numbers">Rp 0</div>
-          <div id="sol-price-usd" class="text-xs font-mono text-slate-400 mt-1 tabular-numbers">$0.00 / SOL</div>
+          <div id="sol-price-idr" class="text-xl font-bold text-white font-mono tabular-numbers" aria-live="polite">Rp 0</div>
+          <div id="sol-price-usd" class="text-xs font-mono text-slate-300 mt-1 tabular-numbers">$0.00 / SOL</div>
         </div>
-        <div class="text-[11px] text-slate-400 border-t border-surface-border/50 pt-2 flex justify-between">
+        <div class="text-[11px] text-slate-300 border-t border-surface-border/60 pt-2 flex justify-between">
           <span>Sentimen AI</span>
           <span id="sentiment-score-text" class="text-emerald-400 font-medium">NEUTRAL (0)</span>
         </div>
@@ -291,20 +307,20 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
     </div>
 
     <!-- Dual-Bucket Strategy Split Showcase -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" role="region" aria-label="Visualisasi Strategi Dual-Bucket">
       <!-- Bucket A (Daily Scalper) -->
-      <div class="bg-surface-raised border border-emerald-500/30 rounded-xl p-5 relative overflow-hidden space-y-3">
+      <div class="bg-surface-raised border border-emerald-500/30 rounded-xl p-5 relative overflow-hidden space-y-3 shadow-sm">
         <div class="flex justify-between items-center">
           <div class="flex items-center gap-2">
-            <span class="p-1 rounded bg-emerald-500/10 text-emerald-400 text-xs font-bold font-mono">50%</span>
-            <h3 class="text-sm font-bold text-white tracking-tight">Bucket A: Daily Scalper Machine</h3>
+            <span class="p-1 rounded bg-emerald-500/10 text-emerald-400 text-xs font-bold font-mono border border-emerald-500/20">50%</span>
+            <h2 class="text-sm font-bold text-white tracking-tight">Bucket A: Daily Scalper Machine</h2>
           </div>
-          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">TARGET +1.0%/DAY + REST</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">TARGET +1.0%/HARI + REST</span>
         </div>
         <div class="grid grid-cols-2 gap-2 text-xs py-2 border-y border-surface-border/60">
           <div>
             <span class="text-slate-400 text-[11px]">Alokasi Aset (50%):</span>
-            <div id="bucket-a-val" class="font-mono text-white font-semibold mt-0.5">Rp 0 (0.010377 SOL)</div>
+            <div id="bucket-a-val" class="font-mono text-white font-semibold mt-0.5">Rp 0 (0.000000 SOL)</div>
           </div>
           <div>
             <span class="text-slate-400 text-[11px]">Status Operasi:</span>
@@ -317,18 +333,18 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
       </div>
 
       <!-- Bucket B (Swing Runner) -->
-      <div class="bg-surface-raised border border-cyan-500/30 rounded-xl p-5 relative overflow-hidden space-y-3">
+      <div class="bg-surface-raised border border-cyan-500/30 rounded-xl p-5 relative overflow-hidden space-y-3 shadow-sm">
         <div class="flex justify-between items-center">
           <div class="flex items-center gap-2">
-            <span class="p-1 rounded bg-cyan-500/10 text-cyan-400 text-xs font-bold font-mono">50%</span>
-            <h3 class="text-sm font-bold text-white tracking-tight">Bucket B: Trend Swing Runner</h3>
+            <span class="p-1 rounded bg-cyan-500/10 text-cyan-400 text-xs font-bold font-mono border border-cyan-500/20">50%</span>
+            <h2 class="text-sm font-bold text-white tracking-tight">Bucket B: Trend Swing Runner</h2>
           </div>
           <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">TRAILING +10-50%</span>
         </div>
         <div class="grid grid-cols-2 gap-2 text-xs py-2 border-y border-surface-border/60">
           <div>
             <span class="text-slate-400 text-[11px]">Alokasi Aset (50%):</span>
-            <div id="bucket-b-val" class="font-mono text-white font-semibold mt-0.5">Rp 0 (0.010377 SOL)</div>
+            <div id="bucket-b-val" class="font-mono text-white font-semibold mt-0.5">Rp 0 (0.000000 SOL)</div>
           </div>
           <div>
             <span class="text-slate-400 text-[11px]">Status Operasi:</span>
@@ -342,37 +358,37 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
     </div>
 
     <!-- Dual Historical Data Charts -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 space-y-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" role="region" aria-label="Grafik Historis Portofolio">
+      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 space-y-4 shadow-sm">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold text-white tracking-tight">Tren Total Portofolio (IDR)</h2>
-          <span class="text-[11px] font-mono text-slate-400">15m Interval Resolution</span>
+          <span class="text-[11px] font-mono text-slate-300">Resolusi Interval 15m</span>
         </div>
         <div class="h-60 w-full relative">
-          <canvas id="assetChart"></canvas>
+          <canvas id="assetChart" aria-label="Grafik Garis Tren Total Portofolio dalam IDR" role="img"></canvas>
         </div>
       </div>
 
-      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 space-y-4">
+      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 space-y-4 shadow-sm">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold text-white tracking-tight">Pergerakan Kurs SOL / IDR</h2>
-          <span class="text-[11px] font-mono text-slate-400">Live Price Feed</span>
+          <span class="text-[11px] font-mono text-slate-300">Live Price Feed</span>
         </div>
         <div class="h-60 w-full relative">
-          <canvas id="priceChart"></canvas>
+          <canvas id="priceChart" aria-label="Grafik Garis Harga Pasar SOL IDR Real-time" role="img"></canvas>
         </div>
       </div>
     </div>
 
     <!-- Recommended Instruments & Stocks Intelligence Strip -->
-    <div class="bg-surface-raised border border-surface-border rounded-xl shadow-lg overflow-hidden space-y-4 p-6">
+    <div class="bg-surface-raised border border-surface-border rounded-xl shadow-lg overflow-hidden space-y-4 p-6" role="region" aria-label="Daftar Pantau Multi-Aset">
       <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pb-4 border-b border-surface-border">
         <div>
           <div class="flex items-center gap-2">
             <h2 class="text-sm font-semibold text-white tracking-tight">Instrumen & Saham Rekomendasi (Intelligence Watchlist)</h2>
             <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">RESEARCH BACKED</span>
           </div>
-          <p class="text-xs text-slate-400 mt-0.5">Kombinasi aset kripto terpilih & saham fundamental kuat (IHSG) untuk diversifikasi</p>
+          <p class="text-xs text-slate-300 mt-0.5">Kombinasi aset kripto terpilih & saham fundamental kuat (IHSG) untuk diversifikasi</p>
         </div>
         <div class="flex items-center gap-2 text-xs font-mono">
           <span class="px-2 py-1 rounded bg-surface-overlay text-emerald-400 border border-surface-border">Crypto High-Beta</span>
@@ -386,16 +402,16 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
     </div>
 
     <!-- 15-Minute Autonomous Sync Journal (Audit Log) with Pagination -->
-    <div class="bg-surface-raised border border-surface-border rounded-xl shadow-lg overflow-hidden">
+    <div class="bg-surface-raised border border-surface-border rounded-xl shadow-lg overflow-hidden" role="region" aria-label="Jurnal Audit Epoch 15 Menit">
       <div class="px-6 py-4 border-b border-surface-border flex flex-col sm:flex-row justify-between sm:items-center gap-2">
         <div>
           <h2 class="text-sm font-semibold text-white tracking-tight">Jurnal Pemantauan & Keputusan Cron (15-Min Epochs)</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Audit rekaman evaluasi sinyal teknikal, pola pasar, dan status on-chain</p>
+          <p class="text-xs text-slate-300 mt-0.5">Audit rekaman evaluasi sinyal teknikal, pola pasar, dan status on-chain</p>
         </div>
         <div class="flex items-center gap-3">
-          <div class="flex items-center gap-1.5 text-xs text-slate-400">
-            <span>Baris:</span>
-            <select id="page-size-select" onchange="changePageSize(this.value)" class="bg-surface-overlay border border-surface-border rounded px-2 py-1 text-slate-200 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400">
+          <div class="flex items-center gap-1.5 text-xs text-slate-300">
+            <label for="page-size-select">Baris:</label>
+            <select id="page-size-select" onchange="changePageSize(this.value)" class="bg-surface-overlay border border-surface-border rounded px-2 py-1 text-slate-200 text-xs font-mono focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" aria-label="Pilih jumlah baris log per halaman">
               <option value="5">5</option>
               <option value="10" selected>10</option>
               <option value="25">25</option>
@@ -404,25 +420,25 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
           <span id="check-counter" class="text-xs font-mono bg-surface-overlay text-slate-300 px-2.5 py-1 rounded border border-surface-border self-start sm:self-auto">0 Epochs Logged</span>
         </div>
       </div>
-      
+
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs border-collapse">
+        <table class="w-full text-left text-xs border-collapse" aria-label="Tabel Catatan Audit Log Trading">
           <thead>
-            <tr class="border-b border-surface-border bg-surface/50 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              <th class="py-3 px-4">Waktu (WIB)</th>
-              <th class="py-3 px-4">Aksi / Status</th>
-              <th class="py-3 px-4">Pola (15m)</th>
-              <th class="py-3 px-4 text-right">Saldo SOL</th>
-              <th class="py-3 px-4 text-right">Nilai SOL (IDR)</th>
-              <th class="py-3 px-4 text-right">Kas USDC (IDR)</th>
-              <th class="py-3 px-4 text-right">Total Aset (IDR)</th>
-              <th class="py-3 px-4">Sentimen</th>
-              <th class="py-3 px-4">Alasan & Pertimbangan</th>
+            <tr class="border-b border-surface-border bg-surface/50 text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
+              <th scope="col" class="py-3 px-4">Waktu (WIB)</th>
+              <th scope="col" class="py-3 px-4">Aksi / Status</th>
+              <th scope="col" class="py-3 px-4">Pola (15m)</th>
+              <th scope="col" class="py-3 px-4 text-right">Saldo SOL</th>
+              <th scope="col" class="py-3 px-4 text-right">Nilai SOL (IDR)</th>
+              <th scope="col" class="py-3 px-4 text-right">Kas USDC (IDR)</th>
+              <th scope="col" class="py-3 px-4 text-right">Total Aset (IDR)</th>
+              <th scope="col" class="py-3 px-4">Sentimen</th>
+              <th scope="col" class="py-3 px-4">Alasan & Pertimbangan</th>
             </tr>
           </thead>
           <tbody id="check-log-body" class="divide-y divide-surface-border font-mono text-slate-300">
             <tr>
-              <td colspan="9" class="py-8 text-center text-slate-500 font-sans">Menghubungkan ke Solana RPC node...</td>
+              <td colspan="9" class="py-8 text-center text-slate-400 font-sans">Menghubungkan ke Solana RPC node...</td>
             </tr>
           </tbody>
         </table>
@@ -430,15 +446,15 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
 
       <!-- Pagination Footer -->
       <div id="pagination-controls" class="px-6 py-3 border-t border-surface-border bg-surface-raised/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-        <div id="pagination-info" class="text-slate-400 font-mono">
+        <div id="pagination-info" class="text-slate-300 font-mono" aria-live="polite">
           Menampilkan 0 - 0 dari 0 data
         </div>
         <div class="flex items-center gap-1.5" id="pagination-buttons">
-          <button id="btn-prev" onclick="prevPage()" class="px-3 py-1.5 rounded bg-surface-overlay border border-surface-border text-slate-300 hover:text-white hover:border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-mono transition">
+          <button id="btn-prev" onclick="prevPage()" class="px-3 py-1.5 rounded bg-surface-overlay border border-surface-border text-slate-200 hover:text-white hover:border-slate-500 disabled:opacity-40 disabled:cursor-not-allowed font-mono transition focus-visible:ring-2 focus-visible:ring-emerald-400" aria-label="Halaman sebelumnya (Shortcut: [)">
             &larr; Prev
           </button>
           <div id="page-numbers" class="flex items-center gap-1"></div>
-          <button id="btn-next" onclick="nextPage()" class="px-3 py-1.5 rounded bg-surface-overlay border border-surface-border text-slate-300 hover:text-white hover:border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-mono transition">
+          <button id="btn-next" onclick="nextPage()" class="px-3 py-1.5 rounded bg-surface-overlay border border-surface-border text-slate-200 hover:text-white hover:border-slate-500 disabled:opacity-40 disabled:cursor-not-allowed font-mono transition focus-visible:ring-2 focus-visible:ring-emerald-400" aria-label="Halaman berikutnya (Shortcut: ])">
             Next &rarr;
           </button>
         </div>
@@ -698,10 +714,19 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
     }
 
     async function refreshData(manual = false) {
+      const bannerEl = document.getElementById('conn-banner');
+      const bannerMsgEl = document.getElementById('conn-banner-msg');
       try {
         const res = await fetch('/api/data');
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: Gagal memuat data.`);
+        }
         const data = await res.json();
-        if (data.error) return;
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        if (bannerEl) bannerEl.classList.add('hidden');
 
         document.getElementById('wallet-addr').innerText = data.wallet_address || 'Connected';
 
@@ -740,7 +765,7 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         const sent = data.sentiment || 'NEUTRAL';
         const score = data.sentiment_score || 0;
         const pat = data.market_pattern || 'SCANNING';
-        
+
         document.getElementById('pattern-badge').innerText = pat;
         document.getElementById('sentiment-score-text').innerText = `${sent} (${score >= 0 ? '+' : ''}${score})`;
 
@@ -788,8 +813,29 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         }
       } catch (err) {
         console.error("Ledger sync error:", err);
+        if (bannerEl) {
+          bannerEl.classList.remove('hidden');
+          if (bannerMsgEl) {
+            bannerMsgEl.innerText = `Terputus dari backend: ${err.message || 'Koneksi gagal'}. Mencoba sinkronisasi otomatis...`;
+          }
+        }
       }
     }
+
+    // Keyboard Shortcuts for Power Users (Alex Persona)
+    document.addEventListener('keydown', function(e) {
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        refreshData(true);
+      } else if (e.key === '[' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevPage();
+      } else if (e.key === ']' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        nextPage();
+      }
+    });
 
     initCharts();
     refreshData();
