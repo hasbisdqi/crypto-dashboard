@@ -160,34 +160,40 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
           },
           colors: {
             surface: {
-              DEFAULT: '#090d16',
-              raised: '#0f1626',
-              overlay: '#17223b',
-              border: '#1f2e4d',
-              muted: '#94a3b8'
+              DEFAULT: '#0a0a0c',
+              raised: '#121216',
+              overlay: '#1a1a22',
+              border: '#2a2a36',
+              muted: '#a1a1aa'
             },
-            sol: '#14F195',
-            usdc: '#2775CA'
+            accent: {
+              DEFAULT: '#FACC15',
+              hover: '#EAB308',
+              glow: 'rgba(250, 204, 21, 0.15)',
+              gold: '#FDE047'
+            },
+            sol: '#FACC15',
+            usdc: '#F59E0B'
           }
         }
       }
     }
   </script>
   <style>
-    ::selection { background: #14F195; color: #090d16; }
+    ::selection { background: #FACC15; color: #0a0a0c; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #090d16; }
-    ::-webkit-scrollbar-thumb { background: #1f2e4d; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #2775CA; }
+    ::-webkit-scrollbar-track { background: #0a0a0c; }
+    ::-webkit-scrollbar-thumb { background: #2a2a36; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #FACC15; }
     .tabular-numbers { font-variant-numeric: tabular-nums; }
 
     :focus-visible {
-      outline: 2px solid #14F195;
+      outline: 2px solid #FACC15;
       outline-offset: 2px;
     }
 
     @keyframes dataPulse {
-      0% { background-color: rgba(20, 241, 149, 0.25); }
+      0% { background-color: rgba(250, 204, 21, 0.3); }
       100% { background-color: transparent; }
     }
     .flash-update {
@@ -198,7 +204,7 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
     }
   </style>
 </head>
-<body class="bg-surface text-slate-100 min-h-full font-sans antialiased flex flex-col">
+<body class="bg-surface text-zinc-100 min-h-full font-sans antialiased flex flex-col">
   <!-- Connection Status Banner -->
   <div id="conn-banner" class="hidden bg-rose-950/90 border-b border-rose-500/30 px-4 py-2 text-xs text-rose-200 flex items-center justify-between z-40">
     <div class="flex items-center gap-2">
@@ -214,24 +220,24 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
   <header class="border-b border-surface-border bg-surface-raised/80 backdrop-blur-md sticky top-0 z-30" role="banner">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-surface-overlay border border-surface-border flex items-center justify-center text-emerald-400 font-bold font-mono text-sm shadow-sm" aria-label="Alokasi 50/50 Dual Bucket">
+        <div class="w-8 h-8 rounded-lg bg-surface-overlay border border-yellow-500/30 flex items-center justify-center text-yellow-400 font-bold font-mono text-sm shadow-sm" aria-label="Alokasi 50/50 Dual Bucket">
           50/50
         </div>
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-sm font-semibold tracking-tight text-white">Dual-Bucket Sentinel Node</h1>
-            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">50% SCALPER + 50% SWING</span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">50% SCALPER + 50% SWING</span>
           </div>
-          <p id="wallet-addr" class="text-[11px] font-mono text-slate-300 truncate max-w-xs sm:max-w-md">Menghubungkan...</p>
+          <p id="wallet-addr" class="text-[11px] font-mono text-zinc-300 truncate max-w-xs sm:max-w-md">Menghubungkan...</p>
         </div>
       </div>
 
       <div class="flex items-center gap-4 text-right">
         <div class="hidden sm:block">
-          <div class="text-[10px] uppercase font-semibold tracking-wider text-slate-400">Cadence Cron 15m</div>
-          <div id="last-updated" class="text-xs font-mono text-slate-200 tabular-numbers" aria-live="polite">--:--:--</div>
+          <div class="text-[10px] uppercase font-semibold tracking-wider text-zinc-400">Cadence Cron 15m</div>
+          <div id="last-updated" class="text-xs font-mono text-zinc-200 tabular-numbers" aria-live="polite">--:--:--</div>
         </div>
-        <button id="btn-manual-refresh" onclick="refreshData(true)" class="p-2 text-slate-300 hover:text-white rounded-lg bg-surface-overlay border border-surface-border transition hover:border-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" aria-label="Segarkan Data Real-time (Shortcut: R)" title="Segarkan Data (Tekan 'R')">
+        <button id="btn-manual-refresh" onclick="refreshData(true)" class="p-2 text-zinc-300 hover:text-yellow-400 rounded-lg bg-surface-overlay border border-surface-border transition hover:border-yellow-500/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400" aria-label="Segarkan Data Real-time (Shortcut: R)" title="Segarkan Data (Tekan 'R')">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
         </button>
       </div>
@@ -242,66 +248,66 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
     <!-- Primary Financial Ledger Metric Strip -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" role="region" aria-label="Ringkasan Portofolio On-Chain">
       <!-- Total Value (IDR) -->
-      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 relative overflow-hidden flex flex-col justify-between shadow-sm">
+      <div class="bg-surface-raised border border-surface-border hover:border-yellow-500/40 rounded-xl p-5 relative overflow-hidden flex flex-col justify-between shadow-sm transition">
         <div class="flex justify-between items-start">
-          <span class="text-xs font-medium uppercase tracking-wider text-slate-300">Total Saldo Dompet</span>
-          <span id="pnl-status" class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">ON-CHAIN</span>
+          <span class="text-xs font-medium uppercase tracking-wider text-zinc-400">Total Saldo Dompet</span>
+          <span id="pnl-status" class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">ON-CHAIN</span>
         </div>
         <div class="my-3">
           <div id="total-val-idr" class="text-3xl font-bold tracking-tight text-white font-sans tabular-numbers" aria-live="polite">Rp 0</div>
-          <div id="total-val-usd" class="text-xs font-mono text-slate-300 mt-1 tabular-numbers">≈ $0.00 USD</div>
+          <div id="total-val-usd" class="text-xs font-mono text-zinc-300 mt-1 tabular-numbers">≈ $0.00 USD</div>
         </div>
-        <div class="text-[11px] text-slate-300 border-t border-surface-border/60 pt-2 flex justify-between">
+        <div class="text-[11px] text-zinc-300 border-t border-surface-border/60 pt-2 flex justify-between">
           <span>Dompet Aktif</span>
-          <span class="text-slate-200">Solana Network</span>
+          <span class="text-zinc-200">Solana Network</span>
         </div>
       </div>
 
       <!-- Real SOL Balance -->
-      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 flex flex-col justify-between shadow-sm">
+      <div class="bg-surface-raised border border-surface-border hover:border-yellow-500/40 rounded-xl p-5 flex flex-col justify-between shadow-sm transition">
         <div class="flex justify-between items-start">
-          <span class="text-xs font-medium uppercase tracking-wider text-slate-300">Posisi Aset SOL</span>
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true"></span>
+          <span class="text-xs font-medium uppercase tracking-wider text-zinc-400">Posisi Aset SOL</span>
+          <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" aria-hidden="true"></span>
         </div>
         <div class="my-3">
-          <div id="sol-bal" class="text-2xl font-bold text-slate-100 font-mono tabular-numbers" aria-live="polite">0.000000 SOL</div>
-          <div id="sol-val-idr" class="text-xs font-sans text-emerald-400 mt-1 font-medium tabular-numbers">≈ Rp 0</div>
+          <div id="sol-bal" class="text-2xl font-bold text-zinc-100 font-mono tabular-numbers" aria-live="polite">0.000000 SOL</div>
+          <div id="sol-val-idr" class="text-xs font-sans text-yellow-400 mt-1 font-medium tabular-numbers">≈ Rp 0</div>
         </div>
-        <div class="text-[11px] text-slate-300 border-t border-surface-border/60 pt-2 flex justify-between font-mono">
+        <div class="text-[11px] text-zinc-300 border-t border-surface-border/60 pt-2 flex justify-between font-mono">
           <span>SPOT</span>
-          <span id="sol-val-usd" class="text-slate-200">$0.00</span>
+          <span id="sol-val-usd" class="text-zinc-200">$0.00</span>
         </div>
       </div>
 
       <!-- Real USDC Liquidity -->
-      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 flex flex-col justify-between shadow-sm">
+      <div class="bg-surface-raised border border-surface-border hover:border-amber-500/40 rounded-xl p-5 flex flex-col justify-between shadow-sm transition">
         <div class="flex justify-between items-start">
-          <span class="text-xs font-medium uppercase tracking-wider text-slate-300">Kas USDC (Ready)</span>
-          <span class="text-[10px] font-mono text-cyan-400" title="Solana Program Library Token">SPL</span>
+          <span class="text-xs font-medium uppercase tracking-wider text-zinc-400">Kas USDC (Ready)</span>
+          <span class="text-[10px] font-mono text-amber-400" title="Solana Program Library Token">SPL</span>
         </div>
         <div class="my-3">
-          <div id="usdc-val-idr" class="text-2xl font-bold text-slate-100 font-sans tabular-numbers" aria-live="polite">Rp 0</div>
-          <div id="usdc-bal" class="text-xs font-mono text-cyan-400 mt-1 tabular-numbers">$0.0000 USDC</div>
+          <div id="usdc-val-idr" class="text-2xl font-bold text-zinc-100 font-sans tabular-numbers" aria-live="polite">Rp 0</div>
+          <div id="usdc-bal" class="text-xs font-mono text-amber-400 mt-1 tabular-numbers">$0.0000 USDC</div>
         </div>
-        <div class="text-[11px] text-slate-300 border-t border-surface-border/60 pt-2 flex justify-between">
+        <div class="text-[11px] text-zinc-300 border-t border-surface-border/60 pt-2 flex justify-between">
           <span>Cadangan Swap</span>
-          <span class="text-slate-200 font-mono">Stablecoin</span>
+          <span class="text-zinc-200 font-mono">Stablecoin</span>
         </div>
       </div>
 
       <!-- Current Oracle & Pattern -->
-      <div class="bg-surface-raised border border-surface-border rounded-xl p-5 flex flex-col justify-between shadow-sm">
+      <div class="bg-surface-raised border border-surface-border hover:border-yellow-500/40 rounded-xl p-5 flex flex-col justify-between shadow-sm transition">
         <div class="flex justify-between items-start">
-          <span class="text-xs font-medium uppercase tracking-wider text-slate-300">Pola Pasar (15m)</span>
-          <span id="pattern-badge" class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-surface-overlay text-amber-300 border border-surface-border">SCANNING</span>
+          <span class="text-xs font-medium uppercase tracking-wider text-zinc-400">Pola Pasar (15m)</span>
+          <span id="pattern-badge" class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-surface-overlay text-yellow-300 border border-surface-border">SCANNING</span>
         </div>
         <div class="my-3">
           <div id="sol-price-idr" class="text-xl font-bold text-white font-mono tabular-numbers" aria-live="polite">Rp 0</div>
-          <div id="sol-price-usd" class="text-xs font-mono text-slate-300 mt-1 tabular-numbers">$0.00 / SOL</div>
+          <div id="sol-price-usd" class="text-xs font-mono text-zinc-300 mt-1 tabular-numbers">$0.00 / SOL</div>
         </div>
-        <div class="text-[11px] text-slate-300 border-t border-surface-border/60 pt-2 flex justify-between">
+        <div class="text-[11px] text-zinc-300 border-t border-surface-border/60 pt-2 flex justify-between">
           <span>Sentimen AI</span>
-          <span id="sentiment-score-text" class="text-emerald-400 font-medium">NEUTRAL (0)</span>
+          <span id="sentiment-score-text" class="text-yellow-400 font-medium">NEUTRAL (0)</span>
         </div>
       </div>
     </div>
@@ -309,49 +315,61 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
     <!-- Dual-Bucket Strategy Split Showcase -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4" role="region" aria-label="Visualisasi Strategi Dual-Bucket">
       <!-- Bucket A (Daily Scalper) -->
-      <div class="bg-surface-raised border border-emerald-500/30 rounded-xl p-5 relative overflow-hidden space-y-3 shadow-sm">
+      <div class="bg-gradient-to-b from-yellow-950/25 to-surface-raised border border-yellow-500/40 hover:border-yellow-400 rounded-xl p-5 relative overflow-hidden space-y-3 shadow-lg shadow-yellow-950/20 transition-all duration-200">
         <div class="flex justify-between items-center">
-          <div class="flex items-center gap-2">
-            <span class="p-1 rounded bg-emerald-500/10 text-emerald-400 text-xs font-bold font-mono border border-emerald-500/20">50%</span>
-            <h2 class="text-sm font-bold text-white tracking-tight">Bucket A: Daily Scalper Machine</h2>
+          <div class="flex items-center gap-2.5">
+            <span class="px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 text-xs font-bold font-mono border border-yellow-400/30">50%</span>
+            <h2 class="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+              Bucket A: Daily Scalper Machine
+              <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-ping" aria-hidden="true"></span>
+            </h2>
           </div>
-          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">TARGET +1.0%/HARI + REST</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-yellow-500/10 text-yellow-300 border border-yellow-500/30">TARGET +1.0%/HARI + REST</span>
         </div>
-        <div class="grid grid-cols-2 gap-2 text-xs py-2 border-y border-surface-border/60">
+        <div class="grid grid-cols-2 gap-2 text-xs py-2.5 border-y border-yellow-500/20 bg-surface-overlay/30 px-3 rounded-lg">
           <div>
-            <span class="text-slate-400 text-[11px]">Alokasi Aset (50%):</span>
-            <div id="bucket-a-val" class="font-mono text-white font-semibold mt-0.5">Rp 0 (0.000000 SOL)</div>
+            <span class="text-zinc-400 text-[11px]">Alokasi Aset (50%):</span>
+            <div id="bucket-a-val" class="font-mono text-yellow-200 font-bold mt-0.5 text-sm">Rp 0 (0.000000 SOL)</div>
           </div>
           <div>
-            <span class="text-slate-400 text-[11px]">Status Operasi:</span>
-            <div id="bucket-a-status" class="font-mono text-emerald-400 font-semibold mt-0.5">SCALP_MONITOR</div>
+            <span class="text-zinc-400 text-[11px]">Status Operasi:</span>
+            <div id="bucket-a-status" class="font-mono text-yellow-400 font-bold mt-0.5 text-sm flex items-center gap-1.5">
+              <span class="inline-block w-2 h-2 rounded-full bg-yellow-400"></span>
+              SCALP_MONITOR
+            </div>
           </div>
         </div>
-        <p class="text-xs text-slate-300 leading-relaxed">
+        <p class="text-xs text-zinc-300 leading-relaxed">
           Mekanisme putar modal cepat harian. Menangkap titik support/rebound dan mengunci profit begitu target +1% tercapai, lalu otomatis istirahat (REST) sampai hari berikutnya.
         </p>
       </div>
 
       <!-- Bucket B (Swing Runner) -->
-      <div class="bg-surface-raised border border-cyan-500/30 rounded-xl p-5 relative overflow-hidden space-y-3 shadow-sm">
+      <div class="bg-gradient-to-b from-amber-950/25 to-surface-raised border border-amber-500/40 hover:border-amber-400 rounded-xl p-5 relative overflow-hidden space-y-3 shadow-lg shadow-amber-950/20 transition-all duration-200">
         <div class="flex justify-between items-center">
-          <div class="flex items-center gap-2">
-            <span class="p-1 rounded bg-cyan-500/10 text-cyan-400 text-xs font-bold font-mono border border-cyan-500/20">50%</span>
-            <h2 class="text-sm font-bold text-white tracking-tight">Bucket B: Trend Swing Runner</h2>
+          <div class="flex items-center gap-2.5">
+            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-xs font-bold font-mono border border-amber-400/30">50%</span>
+            <h2 class="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+              Bucket B: Trend Swing Runner
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" aria-hidden="true"></span>
+            </h2>
           </div>
-          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">TRAILING +10-50%</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/10 text-amber-300 border border-amber-500/30">TRAILING +10-50%</span>
         </div>
-        <div class="grid grid-cols-2 gap-2 text-xs py-2 border-y border-surface-border/60">
+        <div class="grid grid-cols-2 gap-2 text-xs py-2.5 border-y border-amber-500/20 bg-surface-overlay/30 px-3 rounded-lg">
           <div>
-            <span class="text-slate-400 text-[11px]">Alokasi Aset (50%):</span>
-            <div id="bucket-b-val" class="font-mono text-white font-semibold mt-0.5">Rp 0 (0.000000 SOL)</div>
+            <span class="text-zinc-400 text-[11px]">Alokasi Aset (50%):</span>
+            <div id="bucket-b-val" class="font-mono text-amber-200 font-bold mt-0.5 text-sm">Rp 0 (0.000000 SOL)</div>
           </div>
           <div>
-            <span class="text-slate-400 text-[11px]">Status Operasi:</span>
-            <div id="bucket-b-status" class="font-mono text-cyan-400 font-semibold mt-0.5">SWING_HOLD</div>
+            <span class="text-zinc-400 text-[11px]">Status Operasi:</span>
+            <div id="bucket-b-status" class="font-mono text-amber-400 font-bold mt-0.5 text-sm flex items-center gap-1.5">
+              <span class="inline-block w-2 h-2 rounded-full bg-amber-400"></span>
+              SWING_HOLD
+            </div>
           </div>
         </div>
-        <p class="text-xs text-slate-300 leading-relaxed">
+        <p class="text-xs text-zinc-300 leading-relaxed">
           Mekanisme swing hold untuk menangkap bull run besar tanpa terganggu noise harian. Menggunakan trailing stop untuk melindungi capital gain besar.
         </p>
       </div>
@@ -362,7 +380,7 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
       <div class="bg-surface-raised border border-surface-border rounded-xl p-5 space-y-4 shadow-sm">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold text-white tracking-tight">Tren Total Portofolio (IDR)</h2>
-          <span class="text-[11px] font-mono text-slate-300">Resolusi Interval 15m</span>
+          <span class="text-[11px] font-mono text-zinc-300">Resolusi Interval 15m</span>
         </div>
         <div class="h-60 w-full relative">
           <canvas id="assetChart" aria-label="Grafik Garis Tren Total Portofolio dalam IDR" role="img"></canvas>
@@ -372,7 +390,7 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
       <div class="bg-surface-raised border border-surface-border rounded-xl p-5 space-y-4 shadow-sm">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold text-white tracking-tight">Pergerakan Kurs SOL / IDR</h2>
-          <span class="text-[11px] font-mono text-slate-300">Live Price Feed</span>
+          <span class="text-[11px] font-mono text-zinc-300">Live Price Feed</span>
         </div>
         <div class="h-60 w-full relative">
           <canvas id="priceChart" aria-label="Grafik Garis Harga Pasar SOL IDR Real-time" role="img"></canvas>
@@ -386,13 +404,13 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         <div>
           <div class="flex items-center gap-2">
             <h2 class="text-sm font-semibold text-white tracking-tight">Instrumen & Saham Rekomendasi (Intelligence Watchlist)</h2>
-            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">RESEARCH BACKED</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">RESEARCH BACKED</span>
           </div>
-          <p class="text-xs text-slate-300 mt-0.5">Kombinasi aset kripto terpilih & saham fundamental kuat (IHSG) untuk diversifikasi</p>
+          <p class="text-xs text-zinc-300 mt-0.5">Kombinasi aset kripto terpilih & saham fundamental kuat (IHSG) untuk diversifikasi</p>
         </div>
         <div class="flex items-center gap-2 text-xs font-mono">
-          <span class="px-2 py-1 rounded bg-surface-overlay text-emerald-400 border border-surface-border">Crypto High-Beta</span>
-          <span class="px-2 py-1 rounded bg-surface-overlay text-cyan-400 border border-surface-border">Stock Bluechips</span>
+          <span class="px-2 py-1 rounded bg-surface-overlay text-yellow-400 border border-surface-border">Crypto High-Beta</span>
+          <span class="px-2 py-1 rounded bg-surface-overlay text-amber-400 border border-surface-border">Stock Bluechips</span>
         </div>
       </div>
 
@@ -406,25 +424,25 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
       <div class="px-6 py-4 border-b border-surface-border flex flex-col sm:flex-row justify-between sm:items-center gap-2">
         <div>
           <h2 class="text-sm font-semibold text-white tracking-tight">Jurnal Pemantauan & Keputusan Cron (15-Min Epochs)</h2>
-          <p class="text-xs text-slate-300 mt-0.5">Audit rekaman evaluasi sinyal teknikal, pola pasar, dan status on-chain</p>
+          <p class="text-xs text-zinc-300 mt-0.5">Audit rekaman evaluasi sinyal teknikal, pola pasar, dan status on-chain</p>
         </div>
         <div class="flex items-center gap-3">
-          <div class="flex items-center gap-1.5 text-xs text-slate-300">
+          <div class="flex items-center gap-1.5 text-xs text-zinc-300">
             <label for="page-size-select">Baris:</label>
-            <select id="page-size-select" onchange="changePageSize(this.value)" class="bg-surface-overlay border border-surface-border rounded px-2 py-1 text-slate-200 text-xs font-mono focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" aria-label="Pilih jumlah baris log per halaman">
+            <select id="page-size-select" onchange="changePageSize(this.value)" class="bg-surface-overlay border border-surface-border rounded px-2 py-1 text-zinc-200 text-xs font-mono focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400" aria-label="Pilih jumlah baris log per halaman">
               <option value="5">5</option>
               <option value="10" selected>10</option>
               <option value="25">25</option>
             </select>
           </div>
-          <span id="check-counter" class="text-xs font-mono bg-surface-overlay text-slate-300 px-2.5 py-1 rounded border border-surface-border self-start sm:self-auto">0 Epochs Logged</span>
+          <span id="check-counter" class="text-xs font-mono bg-surface-overlay text-zinc-300 px-2.5 py-1 rounded border border-surface-border self-start sm:self-auto">0 Epochs Logged</span>
         </div>
       </div>
 
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs border-collapse" aria-label="Tabel Catatan Audit Log Trading">
           <thead>
-            <tr class="border-b border-surface-border bg-surface/50 text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
+            <tr class="border-b border-surface-border bg-surface/80 sticky top-0 backdrop-blur-sm text-[11px] font-semibold text-zinc-300 uppercase tracking-wider z-10">
               <th scope="col" class="py-3 px-4">Waktu (WIB)</th>
               <th scope="col" class="py-3 px-4">Aksi / Status</th>
               <th scope="col" class="py-3 px-4">Pola (15m)</th>
@@ -436,9 +454,9 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
               <th scope="col" class="py-3 px-4">Alasan & Pertimbangan</th>
             </tr>
           </thead>
-          <tbody id="check-log-body" class="divide-y divide-surface-border font-mono text-slate-300">
+          <tbody id="check-log-body" class="divide-y divide-surface-border/70 font-mono text-zinc-300">
             <tr>
-              <td colspan="9" class="py-8 text-center text-slate-400 font-sans">Menghubungkan ke Solana RPC node...</td>
+              <td colspan="9" class="py-8 text-center text-zinc-400 font-sans">Menghubungkan ke Solana RPC node...</td>
             </tr>
           </tbody>
         </table>
@@ -446,15 +464,15 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
 
       <!-- Pagination Footer -->
       <div id="pagination-controls" class="px-6 py-3 border-t border-surface-border bg-surface-raised/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-        <div id="pagination-info" class="text-slate-300 font-mono" aria-live="polite">
+        <div id="pagination-info" class="text-zinc-300 font-mono" aria-live="polite">
           Menampilkan 0 - 0 dari 0 data
         </div>
         <div class="flex items-center gap-1.5" id="pagination-buttons">
-          <button id="btn-prev" onclick="prevPage()" class="px-3 py-1.5 rounded bg-surface-overlay border border-surface-border text-slate-200 hover:text-white hover:border-slate-500 disabled:opacity-40 disabled:cursor-not-allowed font-mono transition focus-visible:ring-2 focus-visible:ring-emerald-400" aria-label="Halaman sebelumnya (Shortcut: [)">
+          <button id="btn-prev" onclick="prevPage()" class="px-3 py-1.5 rounded bg-surface-overlay border border-surface-border text-zinc-200 hover:text-white hover:border-yellow-500/40 disabled:opacity-40 disabled:cursor-not-allowed font-mono transition focus-visible:ring-2 focus-visible:ring-yellow-400" aria-label="Halaman sebelumnya (Shortcut: [)">
             &larr; Prev
           </button>
           <div id="page-numbers" class="flex items-center gap-1"></div>
-          <button id="btn-next" onclick="nextPage()" class="px-3 py-1.5 rounded bg-surface-overlay border border-surface-border text-slate-200 hover:text-white hover:border-slate-500 disabled:opacity-40 disabled:cursor-not-allowed font-mono transition focus-visible:ring-2 focus-visible:ring-emerald-400" aria-label="Halaman berikutnya (Shortcut: ])">
+          <button id="btn-next" onclick="nextPage()" class="px-3 py-1.5 rounded bg-surface-overlay border border-surface-border text-zinc-200 hover:text-white hover:border-yellow-500/40 disabled:opacity-40 disabled:cursor-not-allowed font-mono transition focus-visible:ring-2 focus-visible:ring-yellow-400" aria-label="Halaman berikutnya (Shortcut: ])">
             Next &rarr;
           </button>
         </div>
@@ -463,7 +481,7 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
   </main>
 
   <footer class="border-t border-surface-border py-4 mt-auto">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-zinc-400">
       <div>Dual-Bucket Market Sentinel • Hermes Autonomous Agent</div>
       <div class="flex items-center gap-4 font-mono text-[11px]">
         <span>RPC: mainnet-beta</span>
@@ -494,12 +512,12 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#0f1626',
-            titleColor: '#94a3b8',
+            backgroundColor: '#121216',
+            titleColor: '#a1a1aa',
             titleFont: { family: '"IBM Plex Mono"', size: 11 },
-            bodyColor: '#f8fafc',
+            bodyColor: '#fef08a',
             bodyFont: { family: '"IBM Plex Mono"', size: 12, weight: '600' },
-            borderColor: '#1f2e4d',
+            borderColor: '#2a2a36',
             borderWidth: 1,
             padding: 10,
             displayColors: false,
@@ -510,13 +528,13 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         },
         scales: {
           x: {
-            grid: { color: '#131b2e' },
-            ticks: { color: '#627d98', font: { family: '"IBM Plex Mono"', size: 10 } }
+            grid: { color: '#1a1a22' },
+            ticks: { color: '#a1a1aa', font: { family: '"IBM Plex Mono"', size: 10 } }
           },
           y: {
-            grid: { color: '#131b2e' },
+            grid: { color: '#1a1a22' },
             ticks: {
-              color: '#627d98',
+              color: '#a1a1aa',
               font: { family: '"IBM Plex Mono"', size: 10 },
               callback: function(v) { return formatIDR(v); }
             }
@@ -525,38 +543,52 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
       };
 
       const ctxAsset = document.getElementById('assetChart').getContext('2d');
+      const gradientAsset = ctxAsset.createLinearGradient(0, 0, 0, 240);
+      gradientAsset.addColorStop(0, 'rgba(250, 204, 21, 0.28)');
+      gradientAsset.addColorStop(1, 'rgba(250, 204, 21, 0.00)');
+
       assetChart = new Chart(ctxAsset, {
         type: 'line',
         data: {
           labels: [],
           datasets: [{
             data: [],
-            borderColor: '#14F195',
-            backgroundColor: 'rgba(20, 241, 149, 0.08)',
-            borderWidth: 2,
+            borderColor: '#FACC15',
+            backgroundColor: gradientAsset,
+            borderWidth: 2.5,
             fill: true,
-            tension: 0.3,
-            pointRadius: 3,
-            pointBackgroundColor: '#14F195'
+            tension: 0.25,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#FACC15',
+            pointBorderColor: '#0a0a0c',
+            pointBorderWidth: 2
           }]
         },
         options: chartDefaults
       });
 
       const ctxPrice = document.getElementById('priceChart').getContext('2d');
+      const gradientPrice = ctxPrice.createLinearGradient(0, 0, 0, 240);
+      gradientPrice.addColorStop(0, 'rgba(245, 158, 11, 0.28)');
+      gradientPrice.addColorStop(1, 'rgba(245, 158, 11, 0.00)');
+
       priceChart = new Chart(ctxPrice, {
         type: 'line',
         data: {
           labels: [],
           datasets: [{
             data: [],
-            borderColor: '#38bdf8',
-            backgroundColor: 'rgba(56, 189, 248, 0.08)',
-            borderWidth: 2,
+            borderColor: '#F59E0B',
+            backgroundColor: gradientPrice,
+            borderWidth: 2.5,
             fill: true,
-            tension: 0.3,
-            pointRadius: 3,
-            pointBackgroundColor: '#38bdf8'
+            tension: 0.25,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#F59E0B',
+            pointBorderColor: '#0a0a0c',
+            pointBorderWidth: 2
           }]
         },
         options: chartDefaults
@@ -569,46 +601,46 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
 
       container.innerHTML = instruments.map(item => {
         const isStock = item.asset_class === 'Stock';
-        const typeBadgeClass = isStock ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-        
+        const typeBadgeClass = isStock ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30';
+
         let priceDisplay = '-';
         let changeDisplay = '';
         if (isStock) {
           priceDisplay = `Rp ${item.price_approx.toLocaleString('id-ID')} / lembar`;
-          changeDisplay = `<span class="text-xs font-mono text-slate-400">Min 1 Lot: Rp ${item.lot_price.toLocaleString('id-ID')}</span>`;
+          changeDisplay = `<span class="text-xs font-mono text-zinc-400">Min 1 Lot: Rp ${item.lot_price.toLocaleString('id-ID')}</span>`;
         } else if (cryptoQuotes && item.coingecko_id && cryptoQuotes[item.coingecko_id]) {
           const q = cryptoQuotes[item.coingecko_id];
           const chg = q.usd_24h_change || 0;
           priceDisplay = `Rp ${Math.round(q.idr || 0).toLocaleString('id-ID')} ($${(q.usd || 0).toLocaleString('en-US')})`;
-          changeDisplay = `<span class="text-xs font-mono ${chg >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${chg >= 0 ? '+' : ''}${chg.toFixed(2)}% (24h)</span>`;
+          changeDisplay = `<span class="text-xs font-mono ${chg >= 0 ? 'text-yellow-400' : 'text-rose-400'}">${chg >= 0 ? '+' : ''}${chg.toFixed(2)}% (24h)</span>`;
         }
 
         return `
-          <div class="bg-surface-overlay/50 border border-surface-border rounded-xl p-4 flex flex-col justify-between hover:border-slate-600 transition">
+          <div class="bg-surface-overlay/40 border border-surface-border hover:border-yellow-500/40 rounded-xl p-4 flex flex-col justify-between transition-all duration-150 shadow-sm">
             <div>
               <div class="flex justify-between items-start">
                 <div class="flex items-center gap-2">
                   <span class="text-base font-bold font-mono text-white">${item.symbol}</span>
                   <span class="px-1.5 py-0.5 rounded text-[10px] font-mono border ${typeBadgeClass}">${item.badge}</span>
                 </div>
-                <span class="text-[10px] font-mono text-slate-400">${item.risk_level} Risk</span>
+                <span class="text-[10px] font-mono text-zinc-300 bg-surface-raised px-1.5 py-0.5 rounded border border-surface-border">${item.risk_level} Risk</span>
               </div>
-              <div class="text-xs font-medium text-slate-300 mt-0.5">${item.name} • <span class="text-slate-400">${item.type}</span></div>
-              
-              <div class="my-3 py-2 border-y border-surface-border/50">
+              <div class="text-xs font-medium text-zinc-200 mt-1">${item.name} • <span class="text-zinc-400 font-mono text-[11px]">${item.type}</span></div>
+
+              <div class="my-3 py-2 border-y border-surface-border/60 bg-surface-raised/40 px-2.5 rounded-lg">
                 <div class="text-sm font-semibold text-white font-mono">${priceDisplay}</div>
                 <div class="flex justify-between items-center mt-1">
                   ${changeDisplay}
-                  ${item.div_yield ? `<span class="text-xs font-mono text-amber-400 font-semibold">Yield ${item.div_yield}</span>` : ''}
+                  ${item.div_yield ? `<span class="text-xs font-mono text-yellow-400 font-semibold">Yield ${item.div_yield}</span>` : ''}
                 </div>
               </div>
 
-              <p class="text-xs text-slate-300 leading-relaxed">${item.thesis}</p>
+              <p class="text-xs text-zinc-300 leading-relaxed">${item.thesis}</p>
             </div>
 
-            <div class="mt-4 pt-2 border-t border-surface-border/40 text-[11px] text-slate-400 flex justify-between items-center">
-              <span>Katalis:</span>
-              <span class="text-slate-200 text-right truncate max-w-[180px]">${item.catalyst}</span>
+            <div class="mt-4 pt-2.5 border-t border-surface-border/50 text-[11px] text-zinc-300 flex justify-between items-center">
+              <span class="font-medium text-zinc-400">Katalis:</span>
+              <span class="text-zinc-100 text-right truncate max-w-[190px] font-medium" title="${item.catalyst}">${item.catalyst}</span>
             </div>
           </div>
         `;
@@ -618,9 +650,9 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
     function renderPaginatedLogs() {
       const tbody = document.getElementById('check-log-body');
       const totalItems = allLogs.length;
-      
+
       if (totalItems === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="py-8 text-center text-slate-500 font-sans">Belum ada epoch catatan pemantauan.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="py-8 text-center text-zinc-500 font-sans">Belum ada epoch catatan pemantauan.</td></tr>';
         document.getElementById('pagination-info').innerText = 'Menampilkan 0 dari 0 data';
         document.getElementById('btn-prev').disabled = true;
         document.getElementById('btn-next').disabled = true;
@@ -637,17 +669,17 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
       const pageLogs = allLogs.slice(startIndex, endIndex);
 
       tbody.innerHTML = pageLogs.map(l => {
-        let actClass = 'bg-surface-overlay text-slate-300 border-surface-border';
-        if (l.action.includes('PROFIT') || l.action.includes('BUY')) actClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+        let actClass = 'bg-surface-overlay text-zinc-300 border-surface-border';
+        if (l.action.includes('PROFIT') || l.action.includes('BUY')) actClass = 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30';
         else if (l.action.includes('LOSS') || l.action.includes('SELL')) actClass = 'bg-rose-500/10 text-rose-400 border-rose-500/20';
-        else if (l.action.includes('ACTIVE') || l.action.includes('SCALP')) actClass = 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20';
-        else if (l.action.includes('MONITOR') || l.action.includes('HOLD')) actClass = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+        else if (l.action.includes('ACTIVE') || l.action.includes('SCALP')) actClass = 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30';
+        else if (l.action.includes('MONITOR') || l.action.includes('HOLD')) actClass = 'bg-amber-500/10 text-amber-300 border-amber-500/30';
 
-        let patClass = 'text-slate-300 bg-surface-overlay';
+        let patClass = 'text-zinc-300 bg-surface-overlay';
         const pat = l.pattern || '-';
-        if (pat.includes('SUPPORT') || pat.includes('DIP')) patClass = 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20';
-        else if (pat.includes('PEAK') || pat.includes('RESISTANCE')) patClass = 'text-amber-400 bg-amber-500/10 border border-amber-500/20';
-        else if (pat.includes('UP')) patClass = 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/20';
+        if (pat.includes('SUPPORT') || pat.includes('DIP')) patClass = 'text-yellow-400 bg-yellow-500/10 border border-yellow-500/30';
+        else if (pat.includes('PEAK') || pat.includes('RESISTANCE')) patClass = 'text-amber-400 bg-amber-500/10 border border-amber-500/30';
+        else if (pat.includes('UP')) patClass = 'text-yellow-300 bg-yellow-500/15 border border-yellow-500/30';
         else if (pat.includes('DOWN')) patClass = 'text-rose-400 bg-rose-500/10 border border-rose-500/20';
 
         const logSolIdr = (l.sol_balance || 0) * (l.sol_idr || currentSolIdr);
@@ -656,15 +688,15 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
 
         return `
           <tr class="hover:bg-surface-overlay/40 transition-colors">
-            <td class="py-3 px-4 text-slate-400 whitespace-nowrap">${l.timestamp}</td>
+            <td class="py-3 px-4 text-zinc-400 whitespace-nowrap">${l.timestamp}</td>
             <td class="py-3 px-4"><span class="px-2 py-0.5 text-[10px] font-semibold rounded border ${actClass}">${l.action}</span></td>
             <td class="py-3 px-4"><span class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded ${patClass}">${pat}</span></td>
-            <td class="py-3 px-4 text-right text-slate-200">${(l.sol_balance || 0).toFixed(6)}</td>
-            <td class="py-3 px-4 text-right text-slate-300">${formatIDR(logSolIdr)}</td>
-            <td class="py-3 px-4 text-right text-slate-400">${formatIDR(logUsdcIdr)}</td>
-            <td class="py-3 px-4 text-right text-emerald-400 font-semibold">${formatIDR(logTotalIdr)}</td>
-            <td class="py-3 px-4 text-xs font-sans text-cyan-300 font-medium">${l.sentiment}</td>
-            <td class="py-3 px-4 text-xs font-sans text-slate-400 max-w-xs truncate" title="${l.reason}">${l.reason}</td>
+            <td class="py-3 px-4 text-right text-zinc-200">${(l.sol_balance || 0).toFixed(6)}</td>
+            <td class="py-3 px-4 text-right text-zinc-300">${formatIDR(logSolIdr)}</td>
+            <td class="py-3 px-4 text-right text-zinc-400">${formatIDR(logUsdcIdr)}</td>
+            <td class="py-3 px-4 text-right text-yellow-400 font-semibold">${formatIDR(logTotalIdr)}</td>
+            <td class="py-3 px-4 text-xs font-sans text-amber-300 font-medium">${l.sentiment}</td>
+            <td class="py-3 px-4 text-xs font-sans text-zinc-400 max-w-xs truncate" title="${l.reason}">${l.reason}</td>
           </tr>
         `;
       }).join('');
@@ -677,11 +709,11 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
       let pageBtnsHtml = '';
       for (let p = 1; p <= totalPages; p++) {
         if (totalPages > 7 && Math.abs(p - currentPage) > 2 && p !== 1 && p !== totalPages) {
-          if (p === 2 || p === totalPages - 1) pageBtnsHtml += `<span class="px-1 text-slate-500">...</span>`;
+          if (p === 2 || p === totalPages - 1) pageBtnsHtml += `<span class="px-1 text-zinc-500">...</span>`;
           continue;
         }
         const isActive = (p === currentPage);
-        const btnClass = isActive ? 'bg-emerald-500 text-black font-bold border-emerald-400' : 'bg-surface-overlay text-white border-surface-border hover:border-slate-500';
+        const btnClass = isActive ? 'bg-yellow-400 text-black font-bold border-yellow-300' : 'bg-surface-overlay text-white border-surface-border hover:border-yellow-500/40';
         pageBtnsHtml += `<button onclick="goToPage(${p})" class="px-2.5 py-1 rounded border text-xs font-mono ${btnClass} transition">${p}</button>`;
       }
       pageNumbersEl.innerHTML = pageBtnsHtml;
