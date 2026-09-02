@@ -11,95 +11,75 @@ DATA_FILE = os.environ.get("DATA_FILE_PATH", os.path.expanduser("~/crypto_tradin
 RECOMMENDED_INSTRUMENTS = [
     {
         "symbol": "SOL",
-        "name": "Solana",
-        "type": "Crypto (L1)",
+        "name": "Solana (Native)",
+        "type": "Layer 1 Infrastructure",
         "asset_class": "Crypto",
         "coingecko_id": "solana",
-        "horizon": "Jangka Pendek / Momentum",
-        "thesis": "High throughput, biaya transaksi ultra-rendah, ekosistem DeFi & volume DEX bertumbuh pesat.",
+        "horizon": "Momentum / Core",
+        "thesis": "High throughput L1, biaya transaksi ultra-rendah, pusat likuiditas DEX & meme launchpad global.",
         "risk_level": "Tinggi",
-        "catalyst": "Inflow ekosistem & adopsi institusional",
-        "badge": "Active Dual-Bucket"
+        "catalyst": "Ekspansi Firedancer validator client & volume DEX on-chain",
+        "badge": "Active Trading Asset"
     },
     {
-        "symbol": "BTC",
-        "name": "Bitcoin",
-        "type": "Crypto (Store of Value)",
+        "symbol": "JUP",
+        "name": "Jupiter Exchange",
+        "type": "Solana DeFi (DEX Aggregator & Perps)",
         "asset_class": "Crypto",
-        "coingecko_id": "bitcoin",
+        "coingecko_id": "jupiter-exchange-solana",
+        "horizon": "Jangka Pendek - Menengah",
+        "thesis": "Aggregator likuiditas nomor 1 di Solana dengan volume swap harian tertinggi, perpetual trading, dan ekosistem LST/JupSOL.",
+        "risk_level": "Tinggi",
+        "catalyst": "Ekspansi produk perps v2, buyback JUP, dan peluncuran token via LFG Launchpad",
+        "badge": "Top Solana DeFi"
+    },
+    {
+        "symbol": "RAY",
+        "name": "Raydium Protocol",
+        "type": "Solana AMM & Liquidity Hub",
+        "asset_class": "Crypto",
+        "coingecko_id": "raydium",
+        "horizon": "Momentum Trading",
+        "thesis": "DEX AMM utama yang menjadi mesin routing likuiditas untuk seluruh token baru dan pool CPMM/CLMM di Solana.",
+        "risk_level": "Tinggi",
+        "catalyst": "Fee revenue sharing tinggi dari trading volume meme coins & integrasi on-chain router",
+        "badge": "Infrastructure DEX"
+    },
+    {
+        "symbol": "DRIFT",
+        "name": "Drift Protocol",
+        "type": "Solana Decentralized Perps & Lending",
+        "asset_class": "Crypto",
+        "coingecko_id": "drift-protocol",
+        "horizon": "Jangka Menengah",
+        "thesis": "Platform derivatif terdesentralisasi (DEX Perpetual) terdepan di Solana, kompetitor langsung Hyperliquid dalam perps on-chain.",
+        "risk_level": "Tinggi",
+        "catalyst": "Pertumbuhan open interest derivatif on-chain & ekspansi lending yield pool",
+        "badge": "Top Solana Perps"
+    },
+    {
+        "symbol": "JTO",
+        "name": "Jito Network",
+        "type": "Solana MEV & Liquid Staking (JitoSOL)",
+        "asset_class": "Crypto",
+        "coingecko_id": "jito-governance-token",
+        "horizon": "Menengah - Panjang",
+        "thesis": "Infrastruktur MEV (Maximal Extractable Value) dan staking terbesar di Solana yang mendistribusikan reward validator.",
+        "risk_level": "Tinggi",
+        "catalyst": "Dominasi validator MEV boost di Solana & pertumbuhan total value locked (TVL) JitoSOL",
+        "badge": "MEV & Staking Core"
+    },
+    {
+        "symbol": "PYTH",
+        "name": "Pyth Network",
+        "type": "Solana Financial Oracle",
+        "asset_class": "Crypto",
+        "coingecko_id": "pyth-network",
         "horizon": "Jangka Panjang",
-        "thesis": "Digital gold, pasokan terbatas 21 juta, ditopang ETF institusional global.",
+        "thesis": "Oracle latency ultra-rendah yang memberi feed harga real-time sub-detik untuk seluruh protokol DeFi di 50+ chain.",
         "risk_level": "Sedang-Tinggi",
-        "catalyst": "Global ETF Inflows & Halving cycle",
-        "badge": "Benchmark"
-    },
-    {
-        "symbol": "ETH",
-        "name": "Ethereum",
-        "type": "Crypto (Smart Contract)",
-        "asset_class": "Crypto",
-        "coingecko_id": "ethereum",
-        "horizon": "Menengah - Panjang",
-        "thesis": "Jaringan Layer 1 paling terdesentralisasi dengan basis modal institusi terbesar.",
-        "risk_level": "Sedang-Tinggi",
-        "catalyst": "L2 Rollups scaling & Staking yields",
-        "badge": "Core Asset"
-    },
-    {
-        "symbol": "BBRI",
-        "name": "Bank Rakyat Indonesia",
-        "type": "Saham IDX (Perbankan)",
-        "asset_class": "Stock",
-        "price_approx": 3750,
-        "lot_price": 375000,
-        "div_yield": "~10.4%",
-        "horizon": "Jangka Panjang / Dividen",
-        "thesis": "Dominasi kredit mikro & UMKM Indonesia, rekor dividend payout ratio konsisten tinggi.",
-        "risk_level": "Rendah-Sedang",
-        "catalyst": "Pertumbuhan kredit nasional & dividen interim",
-        "badge": "Top Dividend"
-    },
-    {
-        "symbol": "BBCA",
-        "name": "Bank Central Asia",
-        "type": "Saham IDX (Perbankan Swasta)",
-        "asset_class": "Stock",
-        "price_approx": 9850,
-        "lot_price": 985000,
-        "div_yield": "~4.15%",
-        "horizon": "Jangka Panjang / Core Growth",
-        "thesis": "Fundamental paling kokoh di IHSG, dana murah (CASA) tebal, NPL sangat rendah, defensif terhadap krisis.",
-        "risk_level": "Rendah",
-        "catalyst": "Pertumbuhan laba bersih & aliran modal asing",
-        "badge": "Bluechip Utama"
-    },
-    {
-        "symbol": "TLKM",
-        "name": "Telkom Indonesia",
-        "type": "Saham IDX (Telekomunikasi/Infrastruktur)",
-        "asset_class": "Stock",
-        "price_approx": 2850,
-        "lot_price": 285000,
-        "div_yield": "~7.8%",
-        "horizon": "Menengah - Panjang",
-        "thesis": "Transformasi bisnis B2B, konsolidasi data center, dan dividen yield konsisten menarik.",
-        "risk_level": "Rendah-Sedang",
-        "catalyst": "Restrukturisasi FiberCo (TIF) & pertumbuhan data center",
-        "badge": "Value & Yield"
-    },
-    {
-        "symbol": "ASII",
-        "name": "Astra International",
-        "type": "Saham IDX (Konglomerasi)",
-        "asset_class": "Stock",
-        "price_approx": 5050,
-        "lot_price": 505000,
-        "div_yield": "~6.5%",
-        "horizon": "Jangka Panjang / Siklikal",
-        "thesis": "Konglomerasi terdiversifikasi (otomotif, alat berat, agribisnis, fintech), valuasi menarik & dividen rutin.",
-        "risk_level": "Sedang",
-        "catalyst": "Pemulihan daya beli & penetrasi kendaraan hybrid/EV",
-        "badge": "Diversified"
+        "catalyst": "Adopsi feed data institusional dan ekspansi ke cross-chain dApps",
+        "badge": "Critical Oracle"
     }
 ]
 
@@ -403,14 +383,14 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
       <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pb-4 border-b border-surface-border">
         <div>
           <div class="flex items-center gap-2">
-            <h2 class="text-sm font-semibold text-white tracking-tight">Instrumen & Saham Rekomendasi (Intelligence Watchlist)</h2>
-            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">RESEARCH BACKED</span>
+            <h2 class="text-sm font-semibold text-white tracking-tight">Top Solana Ecosystem Tokens (Intelligence Watchlist)</h2>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">SOLANA ECOSYSTEM</span>
           </div>
-          <p class="text-xs text-zinc-300 mt-0.5">Kombinasi aset kripto terpilih & saham fundamental kuat (IHSG) untuk diversifikasi</p>
+          <p class="text-xs text-zinc-300 mt-0.5">Daftar token fundamental & protokol DeFi terdepan di ekosistem Solana</p>
         </div>
         <div class="flex items-center gap-2 text-xs font-mono">
-          <span class="px-2 py-1 rounded bg-surface-overlay text-yellow-400 border border-surface-border">Crypto High-Beta</span>
-          <span class="px-2 py-1 rounded bg-surface-overlay text-amber-400 border border-surface-border">Stock Bluechips</span>
+          <span class="px-2 py-1 rounded bg-surface-overlay text-yellow-400 border border-surface-border">SPL Tokens</span>
+          <span class="px-2 py-1 rounded bg-surface-overlay text-amber-400 border border-surface-border">DeFi / Infra</span>
         </div>
       </div>
 
